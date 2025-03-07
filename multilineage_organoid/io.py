@@ -92,6 +92,7 @@ class DataReader(object):
     """
 
     def __init__(self, data_type: str = DATA_TYPE):
+        print("Creating a reader")
         self.data_type = data_type
 
     @classmethod
@@ -254,7 +255,7 @@ class DataReader(object):
         df = df.iloc[1:, :]
 
         column_matchers = [
-            (TIME_KEYS, time_indices),
+            (TIME_KEYS, time_indices), 
             (AREA_KEYS, area_indices),
             (MEAN_KEYS, mean_indices),
         ]
@@ -282,9 +283,13 @@ class DataReader(object):
             raise OSError(err)
         time_idx = time_indices[0]
 
+        print(time_indices)
+        print(area_indices)
+        print(mean_indices)
+
         # Area index and mean need to be non-zero length
         if len(area_indices) == 0:
-            err = f'Invalid stat file. Cannot find any area columns in: {infile}'
+            err = f'Invalid stat file. Cannot find any area columns in 50: {infile}'
             raise OSError(err)
         if len(mean_indices) == 0:
             err = f'Invalid stat file. Cannot find any signal value columns in: {infile}'
