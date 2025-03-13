@@ -341,6 +341,7 @@ def calc_stats_around_peak(time: np.ndarray,
     peak_value = signal[peak_idx]
 
     before_peak = signal[start_idx:peak_idx+1]
+    print(str(start_idx) + " " + str(peak_idx) + " " + str(end_idx))
     after_peak = signal[peak_idx:end_idx+1]
 
     # Work out the indicies of the min point and the 5% threshold
@@ -355,20 +356,24 @@ def calc_stats_around_peak(time: np.ndarray,
 
     before_cutoff = np.max([before_cutoff, before_min_value])
     after_cutoff = np.max([after_cutoff, after_min_value])
+    print("before_cutoff: " + str(before_cutoff))
 
     # Find all the indicies below the threshold
     before_peak_locs = np.nonzero(before_peak <= before_cutoff)[0]
     after_peak_locs = np.nonzero(after_peak <= after_cutoff)[0]
     before_peak_locs = np.append(before_peak_locs, before_min_index)
     after_peak_locs = np.append(after_peak_locs, after_min_index)
+    print("before_peak_locs: " + str(before_peak_locs))
 
     peak_start_index = np.max(before_peak_locs)
     peak_start_index += start_idx
+    print("peak_start_index: "+str(peak_start_index))
     peak_end_index = np.min(after_peak_locs)
     peak_end_index += peak_idx
 
     # Get stats for total time
     total_wave_time = time[peak_end_index] - time[peak_start_index]
+    print("total_wave_time: " + str(total_wave_time))
 
     # Peak height
     peak_height = min([signal[peak_idx] - signal[peak_end_index],
@@ -502,7 +507,7 @@ def calc_signal_stats(time: np.ndarray,
 def refine_signal_peaks(time: np.ndarray,
                         signal: np.ndarray,
                         peaks: List[int],
-                        valley_rel: float = 0.05,
+                        val5ley_rel: float = 0.05,
                         min_peak_width: int = 1,
                         min_peak_height: float = 0.0,
                         offset: int = 0,
