@@ -25,7 +25,7 @@ from typing import List, Optional, Tuple, Dict
 import numpy as np
 
 from skimage.feature import peak_local_max
-
+from scipy.signal import argrelextrema
 from scipy.signal import filtfilt
 
 from sklearn.preprocessing import PolynomialFeatures
@@ -492,8 +492,23 @@ def calc_signal_stats(time: np.ndarray,
         signal_finite = signal[sigmask]
         time_finite = time[sigmask]
 
-        peak_indicies = peak_local_max(signal_finite,
-                                       min_distance=samples_around_peak)
+        #This code was contributed by Boirs Milkov, here modified the peak detection function 
+        peak_indicies = argrelextrema(signal_finite,
+                                       np.greater,
+                                       order=15)[0]
+        trough_indicies = argrelextrema(signal_finite,
+                                       np.less,
+                                       order=15)[0]
+        peak_indicies = np.sort(peak_indicies)
+        trough_indicies = np.sort(trough_indicies)
+        #print("peak_indicies" + str(peak_indicies))
+        #print("trough_indicies" + str(trough_indicies))
+        extrema = np.append(peak_indicies, trough_indicies)
+        extrema = np.sort(extrema)
+        #print("extrema" + str(extrema))
+        # Only keep peaks that are surrounded by troughs. This implies a complete wave form
+        refined_peaks = [p for i,p in enumerate(extrema) if i<len(extrema)-1 and i>0 and (extrema[i-1] in trough_indicies) and (extrema[i+1] in trough_indicies)]
+
 
         peaks = refine_signal_peaks(time_finite, signal_finite, peak_indicies,
                                     offset=offset_st,
