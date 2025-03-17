@@ -4,6 +4,7 @@ import traceback
 from typing import List, Optional
 import numpy as np
 from skimage.feature import peak_local_max
+from scipy.signal import argrelextrema
 
 # Our own imports
 from multilineage_organoid import signals as sg
@@ -71,11 +72,27 @@ def debug_calc_signal_stats(time: np.ndarray,
         signal_finite = signal[sigmask]
         time_finite = time[sigmask]
 
-        peak_indicies = peak_local_max(signal_finite,
-                                       min_distance=samples_around_peak,
-                                       threshold_rel=0.8)
+        peak_indicies = argrelextrema(signal_finite,
+                                       np.greater,
+                                       order=15)[0]
+        trough_indicies = argrelextrema(signal_finite,
+                                       np.less,
+                                       order=15)[0]
+        peak_indicies = np.sort(peak_indicies)
+        trough_indicies = np.sort(trough_indicies)
+        print("peak_indicies" + str(peak_indicies))
+        print("trough_indicies" + str(trough_indicies))
+        extrema = np.append(peak_indicies, trough_indicies)
+        extrema = np.sort(extrema)
+        print("extrema" + str(extrema))
+        # Only keep peaks that are surrounded by troughs. This implies a complete wave form
+        refined_peaks = [p for i,p in enumerate(extrema) if i<len(extrema)-1 and i>0 and (extrema[i-1] in trough_indicies) and (extrema[i+1] in trough_indicies)]
 
-        peaks = sg.refine_signal_peaks(time_finite, signal_finite, peak_indicies,
+
+        print("refined_peaks" + str(refined_peaks)) 
+
+
+        peaks = sg.refine_signal_peaks(time_finite, signal_finite, refined_peaks,
                                     offset=offset_st,
                                     time_scale=time_scale,
                                     skip_model_fit=skip_model_fit)
@@ -138,6 +155,7 @@ def debug_filter_datafile(
     stats = sg.select_top_stats(stats)
     stats = sg.add_summary_stats(stats, time_scale=time_scale)
 
-    print([x["signal_stats"][1:-1] for x in stats])
+    print(stats)
+    # print([x["signal_stats"][1:-1] for x in stats])
 
 debug_filter_datafile(skip_detrend = True, skip_lowpass=True)
