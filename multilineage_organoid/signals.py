@@ -25,7 +25,7 @@ from typing import List, Optional, Tuple, Dict
 import numpy as np
 
 from skimage.feature import peak_local_max
-
+from scipy.signal import argrelextrema
 from scipy.signal import filtfilt
 
 from sklearn.preprocessing import PolynomialFeatures
@@ -341,6 +341,7 @@ def calc_stats_around_peak(time: np.ndarray,
     peak_value = signal[peak_idx]
 
     before_peak = signal[start_idx:peak_idx+1]
+    print(str(start_idx) + " " + str(peak_idx) + " " + str(end_idx))
     after_peak = signal[peak_idx:end_idx+1]
 
     # Work out the indicies of the min point and the 5% threshold
@@ -355,20 +356,24 @@ def calc_stats_around_peak(time: np.ndarray,
 
     before_cutoff = np.max([before_cutoff, before_min_value])
     after_cutoff = np.max([after_cutoff, after_min_value])
+    print("before_cutoff: " + str(before_cutoff))
 
     # Find all the indicies below the threshold
     before_peak_locs = np.nonzero(before_peak <= before_cutoff)[0]
     after_peak_locs = np.nonzero(after_peak <= after_cutoff)[0]
     before_peak_locs = np.append(before_peak_locs, before_min_index)
     after_peak_locs = np.append(after_peak_locs, after_min_index)
+    print("before_peak_locs: " + str(before_peak_locs))
 
     peak_start_index = np.max(before_peak_locs)
     peak_start_index += start_idx
+    print("peak_start_index: "+str(peak_start_index))
     peak_end_index = np.min(after_peak_locs)
     peak_end_index += peak_idx
 
     # Get stats for total time
     total_wave_time = time[peak_end_index] - time[peak_start_index]
+    print("total_wave_time: " + str(total_wave_time))
 
     # Peak height
     peak_height = min([signal[peak_idx] - signal[peak_end_index],
@@ -487,8 +492,23 @@ def calc_signal_stats(time: np.ndarray,
         signal_finite = signal[sigmask]
         time_finite = time[sigmask]
 
-        peak_indicies = peak_local_max(signal_finite,
-                                       min_distance=samples_around_peak)
+        #This code was contributed by Boirs Milkov, here modified the peak detection function 
+        peak_indicies = argrelextrema(signal_finite,
+                                       np.greater,
+                                       order=15)[0]
+        trough_indicies = argrelextrema(signal_finite,
+                                       np.less,
+                                       order=15)[0]
+        peak_indicies = np.sort(peak_indicies)
+        trough_indicies = np.sort(trough_indicies)
+        #print("peak_indicies" + str(peak_indicies))
+        #print("trough_indicies" + str(trough_indicies))
+        extrema = np.append(peak_indicies, trough_indicies)
+        extrema = np.sort(extrema)
+        #print("extrema" + str(extrema))
+        # Only keep peaks that are surrounded by troughs. This implies a complete wave form
+        refined_peaks = [p for i,p in enumerate(extrema) if i<len(extrema)-1 and i>0 and (extrema[i-1] in trough_indicies) and (extrema[i+1] in trough_indicies)]
+
 
         peaks = refine_signal_peaks(time_finite, signal_finite, peak_indicies,
                                     offset=offset_st,
