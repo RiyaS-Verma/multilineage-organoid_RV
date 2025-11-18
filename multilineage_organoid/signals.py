@@ -492,7 +492,7 @@ def calc_signal_stats(time: np.ndarray,
         signal_finite = signal[sigmask]
         time_finite = time[sigmask]
 
-        #This code was contributed by Boirs Milkov, here modified the peak detection function 
+        #This code was contributed by Boris Milkov, here modified the peak detection function 
         peak_indicies = argrelextrema(signal_finite,
                                        np.greater,
                                        order=15)[0]
