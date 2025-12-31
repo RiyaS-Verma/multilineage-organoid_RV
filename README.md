@@ -1,3 +1,7 @@
+
+# Riya Vermas modifications:
+Building on the tool below, this version has improved wave detection, and calculates slope at half max
+
 # Calcium Trace Analysis for Cardiac and Multilineage Organoids
 
 Analyze calcium and electrophysiology traces for spontaneously beating and paced
