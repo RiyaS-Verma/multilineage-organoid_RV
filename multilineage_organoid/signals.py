@@ -289,6 +289,11 @@ def calc_velocity_stats(time: np.ndarray,
     :returns:
         A tuple of mean, std, and max velocity in the specified direction
     """
+
+    # Find slope at half max
+    amplitude = np.max(signal) - np.min(signal)
+    half_max = np.min(signal) + 0.5 * amplitude
+    index_half_max = np.argmin(np.abs(signal - half_max)) #find the closest index to half max value
     if time.shape[0] < 3 or signal.shape[0] < 3:
         return np.nan, np.nan, np.nan
 
@@ -301,15 +306,15 @@ def calc_velocity_stats(time: np.ndarray,
     elif direction == 'down':
         vel = -vel[vel < 0]
     else:
-        raise KeyError(f'Unknown direction: "{direction}"')
+        raise KeyError(f'Unknown diretction: "{direction}"')
 
     if vel.shape[0] < 3:
         return np.nan, np.nan, np.nan
 
     if direction == 'up':
-        return np.mean(vel), np.std(vel), np.max(vel)
+        return np.mean(vel), np.std(vel), np.max(vel), time[np.argmax(vel)], vel[index_half_max], time[index_half_max]
     else:
-        return -np.mean(vel), np.std(vel), -np.max(vel)
+        return -np.mean(vel), np.std(vel), -np.max(vel), -vel[index_half_max]
 
 
 def calc_stats_around_peak(time: np.ndarray,
@@ -404,12 +409,12 @@ def calc_stats_around_peak(time: np.ndarray,
             direction='down')
 
         # Max velocity up and down
-        mean_vel_up, std_vel_up, max_vel_up = calc_velocity_stats(
+        mean_vel_up, std_vel_up, max_vel_up, idx_max_vel_up, vel_up_half_max, idx_half_max_up = calc_velocity_stats(
             time[peak_start_index:peak_idx+1],
             signal[peak_start_index:peak_idx+1],
             direction='up',
             time_scale=time_scale)
-        mean_vel_down, std_vel_down, max_vel_down = calc_velocity_stats(
+        mean_vel_down, std_vel_down, max_vel_down, vel_down_half_max = calc_velocity_stats(
             time[peak_idx:peak_end_index+1],
             signal[peak_idx:peak_end_index+1],
             direction='down',
@@ -441,6 +446,9 @@ def calc_stats_around_peak(time: np.ndarray,
         'mean_vel_up': mean_vel_up,
         'max_vel_up': max_vel_up,
         'std_vel_up': std_vel_up,
+        'idx_max_up': idx_max_vel_up,
+        'half_max_slope_up': vel_up_half_max,
+        'idx_half_max_up': idx_half_max_up,
         'mean_vel_down': mean_vel_down,
         'max_vel_down': max_vel_down,
         'std_vel_down': std_vel_down,
@@ -492,7 +500,7 @@ def calc_signal_stats(time: np.ndarray,
         signal_finite = signal[sigmask]
         time_finite = time[sigmask]
 
-        #This code was contributed by Boris Milkov, here modified the peak detection function 
+        #This code was contributed by Boirs Milkov, here modified the peak detection function 
         peak_indicies = argrelextrema(signal_finite,
                                        np.greater,
                                        order=15)[0]
@@ -663,6 +671,9 @@ def add_summary_stats(stats: List[Dict],
         't90_down',
         'mean_vel_up',
         'max_vel_up',
+        'idx_max_up',
+        'half_max_slope_up',
+        'idx_half_max_up',
         'mean_vel_down',
         'max_vel_down',
         'se_amp',
