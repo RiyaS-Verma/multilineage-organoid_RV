@@ -1,6 +1,6 @@
 
-# Riya Vermas modifications:
-Building on the tool below, this version has improved wave detection, and calculates slope at half max
+# Riya Verma's modifications:
+Building on the tool below, this version has improved wave detection, and calculates slope at half max. Thanks BM for helping. 
 
 # Calcium Trace Analysis for Cardiac and Multilineage Organoids
 
