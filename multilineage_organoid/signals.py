@@ -291,28 +291,46 @@ def calc_velocity_stats(time: np.ndarray,
     """
 
     # Find slope at half max
+def calc_velocity_stats(time: np.ndarray,
+                        signal: np.ndarray,
+                        direction: str = 'up',
+                        time_scale: float = TIME_SCALE) -> Tuple[float]:
     amplitude = np.max(signal) - np.min(signal)
     half_max = np.min(signal) + 0.5 * amplitude
-    index_half_max = np.argmin(np.abs(signal - half_max)) #find the closest index to half max value
+    index_half_max = np.argmin(np.abs(signal - half_max))
+
     if time.shape[0] < 3 or signal.shape[0] < 3:
-        return np.nan, np.nan, np.nan
+        return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
 
     dt = (time[1:] - time[:-1]) / time_scale
     ds = signal[1:] - signal[:-1]
-
     vel = ds / dt
+
     if direction == 'up':
-        vel = vel[vel > 0]
+        up_mask = vel > 0
+        if np.any(up_mask):
+            # argmax within positive velocities, mapped back to original indices
+            max_up_idx = np.where(up_mask)[0][np.argmax(vel[up_mask])]
+            # vel[i] spans time[i]→time[i+1]; use time[i+1] as the representative point
+            t_start_to_max_vel = time[max_up_idx + 1] - time[0]
+        else:
+            t_start_to_max_vel = np.nan
+        vel = vel[up_mask]
     elif direction == 'down':
         vel = -vel[vel < 0]
     else:
-        raise KeyError(f'Unknown diretction: "{direction}"')
+        raise KeyError(f'Unknown direction: "{direction}"')
 
     if vel.shape[0] < 3:
-        return np.nan, np.nan, np.nan
+        if direction == 'up':
+            return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+        else:
+            return np.nan, np.nan, np.nan, np.nan
 
     if direction == 'up':
-        return np.mean(vel), np.std(vel), np.max(vel), time[np.argmax(vel)], vel[index_half_max], time[index_half_max]
+        return (np.mean(vel), np.std(vel), np.max(vel),
+                time[np.argmax(vel)], vel[index_half_max], time[index_half_max],
+                t_start_to_max_vel)
     else:
         return -np.mean(vel), np.std(vel), -np.max(vel), -vel[index_half_max]
 
@@ -391,6 +409,7 @@ def calc_stats_around_peak(time: np.ndarray,
         t50_down = t85_down = t90_down = np.nan
         mean_vel_up = std_vel_up = max_vel_up = np.nan
         mean_vel_down = std_vel_down = max_vel_down = np.nan
+        t_start_to_max_vel_up = np.nan
         fit = None
     else:
         # Times for up and down
@@ -409,7 +428,7 @@ def calc_stats_around_peak(time: np.ndarray,
             direction='down')
 
         # Max velocity up and down
-        mean_vel_up, std_vel_up, max_vel_up, idx_max_vel_up, vel_up_half_max, idx_half_max_up = calc_velocity_stats(
+        mean_vel_up, std_vel_up, max_vel_up, idx_max_vel_up, vel_up_half_max, idx_half_max_up, t_start_to_max_vel_up = calc_velocity_stats(
             time[peak_start_index:peak_idx+1],
             signal[peak_start_index:peak_idx+1],
             direction='up',
@@ -447,6 +466,7 @@ def calc_stats_around_peak(time: np.ndarray,
         'max_vel_up': max_vel_up,
         'std_vel_up': std_vel_up,
         'idx_max_up': idx_max_vel_up,
+        't_start_to_max_vel_up': t_start_to_max_vel_up,
         'half_max_slope_up': vel_up_half_max,
         'idx_half_max_up': idx_half_max_up,
         'mean_vel_down': mean_vel_down,
@@ -674,6 +694,7 @@ def add_summary_stats(stats: List[Dict],
         'idx_max_up',
         'half_max_slope_up',
         'idx_half_max_up',
+        't_start_to_max_vel_up',
         'mean_vel_down',
         'max_vel_down',
         'se_amp',
