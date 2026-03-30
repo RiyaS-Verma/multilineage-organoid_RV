@@ -272,10 +272,17 @@ def find_key_times(time: np.ndarray,
     return pct_times
 
 
+
+
+
 def calc_velocity_stats(time: np.ndarray,
                         signal: np.ndarray,
                         direction: str = 'up',
                         time_scale: float = TIME_SCALE) -> Tuple[float]:
+    amplitude = np.max(signal) - np.min(signal)
+    half_max = np.min(signal) + 0.5 * amplitude
+    index_half_max = np.argmin(np.abs(signal - half_max))
+
     """ Calculate the velocity statistics
 
     :param ndarray time:
@@ -290,17 +297,11 @@ def calc_velocity_stats(time: np.ndarray,
         A tuple of mean, std, and max velocity in the specified direction
     """
 
-    # Find slope at half max
-def calc_velocity_stats(time: np.ndarray,
-                        signal: np.ndarray,
-                        direction: str = 'up',
-                        time_scale: float = TIME_SCALE) -> Tuple[float]:
-    amplitude = np.max(signal) - np.min(signal)
-    half_max = np.min(signal) + 0.5 * amplitude
-    index_half_max = np.argmin(np.abs(signal - half_max))
-
     if time.shape[0] < 3 or signal.shape[0] < 3:
-        return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+        if direction == 'up':
+            return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+        else:
+            return np.nan, np.nan, np.nan, np.nan
 
     dt = (time[1:] - time[:-1]) / time_scale
     ds = signal[1:] - signal[:-1]
@@ -408,8 +409,11 @@ def calc_stats_around_peak(time: np.ndarray,
         t_peak = np.nan
         t50_down = t85_down = t90_down = np.nan
         mean_vel_up = std_vel_up = max_vel_up = np.nan
-        mean_vel_down = std_vel_down = max_vel_down = np.nan
+        idx_max_vel_up = np.nan          # ← add
+        vel_up_half_max = np.nan         # ← add
+        idx_half_max_up = np.nan         # ← add
         t_start_to_max_vel_up = np.nan
+        mean_vel_down = std_vel_down = max_vel_down = np.nan
         fit = None
     else:
         # Times for up and down
