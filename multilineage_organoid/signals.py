@@ -333,7 +333,7 @@ def calc_velocity_stats(time: np.ndarray,
                 time[np.argmax(vel)], vel[min(index_half_max, len(vel) - 1)], time[min(index_half_max, len(vel) - 1)],
                 t_start_to_max_vel)
     else:
-        return -np.mean(vel), np.std(vel), -np.max(vel), -vel[index_half_max]
+        return -np.mean(vel), np.std(vel), -np.max(vel), -vel[min(index_half_max, len(vel) - 1)]
 
 
 def calc_stats_around_peak(time: np.ndarray,
